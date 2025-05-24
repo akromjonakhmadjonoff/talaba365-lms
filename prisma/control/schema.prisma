@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/control"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_CONTROL")
+}
+
+model Tenant {
+  id       String     @id @default(uuid())
+  name     String // Display name of the tenant (e.g., Harvard University)
+  slug     String     @unique // Subdomain or unique key (e.g., harvard)
+  type     TenantType // shared or dedicated
+  db_url   String? // DB URL (null for shared tenants)
+  timezone String? // Optional: tenant-specific timezone
+  region   String? // Region or data center (useful for sharding)
+
+  is_active  Boolean      @default(true) // Soft deactivation toggle
+  status     TenantStatus @default(PENDING) // pending, active, suspended, etc.
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+
+  @@map("tenant")
+}
+
+enum TenantType {
+  SHARED
+  DEDICATED
+}
+
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DELETED
+}

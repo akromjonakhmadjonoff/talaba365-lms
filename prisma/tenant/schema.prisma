@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/tenant"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_TENANT")
+}
+
+//  Enums
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Qualification {
+  PHD
+  MASTERS
+  MASTERS_OF_EDUCATION
+  MBA
+  BACHELORS
+  BACHELORS_OF_EDUCATION
+  ASSOCIATE_DEGREE
+  DIPLOMA
+  POSTGRADUATE_DIPLOMA
+  HIGHER_NATIONAL_DIPLOMA
+  CERTIFICATE
+  TEACHING_CERTIFICATE
+  RESEARCH_FELLOW
+  POSTDOCTORATE
+  OTHER
+}
+
+enum Designation {
+  PROFESSOR
+  ASSOCIATE_PROFESSOR
+  ASSISTANT_PROFESSOR
+  LECTURER
+  SENIOR_LECTURER
+  ADJUNCT_PROFESSOR
+  VISITING_PROFESSOR
+  TEACHING_ASSISTANT
+  INSTRUCTOR
+  SENIOR_INSTRUCTOR
+  RESEARCH_FELLOW
+  POSTDOCTORAL_RESEARCHER
+  DEPARTMENT_HEAD
+  DEAN
+  ACADEMIC_COORDINATOR
+}
+
+//  Models
+model Role {
+  id          Int        @default(autoincrement())
+  uuid        String     @id @default(uuid())
+  name        String
+  label       String
+  description String?
+  priority    Int?
+  is_system   Boolean    @default(false)
+  permissions Json?
+  user_roles  UserRole[]
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  @@unique([id, uuid, name])
+  @@index([created_at, id])
+  @@map("role")
+}
+
+model UserRole {
+  id        Int    @id @default(autoincrement())
+  uuid      String @default(uuid())
+  user_uuid String
+  role_uuid String
+
+  garanted User @relation("roles_granted_by_user", fields: [garanted_by], references: [uuid])
+  user     User @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  role     Role @relation(fields: [role_uuid], references: [uuid], onDelete: Cascade)
+
+  assigned_at DateTime @default(now())
+  garanted_by String
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([id, uuid])
+  @@index([user_uuid, role_uuid, uuid, id, created_at])
+  @@map("user_role")
+}
+
+model User {
+  // Personal Info
+  id                Int       @default(autoincrement())
+  uuid              String    @id @default(uuid())
+  full_name         String
+  email             String
+  password_hash     String
+  profile_image_url String?
+  phone_number      String?
+  gender            Gender?
+  date_of_birth     DateTime?
+
+  // System Control
+  is_active     Boolean   @default(true)
+  last_login_at DateTime?
+  created_at    DateTime  @default(now())
+  timezone      String?
+  bio           String?
+  updated_at    DateTime  @updatedAt
+  refresh_token String?
+
+  user_roles    UserRole[]
+  granted_roles UserRole[] @relation("roles_granted_by_user")
+  teacher       Teacher?
+
+  @@unique([email])
+  @@index([is_active, id, uuid, created_at])
+  @@map("user")
+}
+
+model Teacher {
+  // Institutional Info
+  id        Int    @default(autoincrement())
+  uuid      String @default(uuid())
+  user_uuid String @unique
+
+  user             User          @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  designation      Designation
+  employee_id      String
+  department_id    Int
+  qualification    Qualification
+  experience_years Int
+  join_date        DateTime
+
+  // Availability & Scheduling
+  availability_json String?
+  office_hours_json Json?
+
+  // System Control
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@id([user_uuid, uuid])
+  @@unique([user_uuid, uuid, id])
+  @@index([id, uuid, created_at])
+  @@map("teacher")
+}
+
+model Log {
+  id         String   @id @default(uuid())
+  user_uuid  String?
+  action     String
+  model      String
+  model_id   String?
+  old_data   Json?
+  new_data   Json?
+  request_id String?
+  ip_address String?
+  user_agent String?
+  created_at DateTime @default(now())
+
+  @@index([model, model_id])
+  @@map("log")
+}

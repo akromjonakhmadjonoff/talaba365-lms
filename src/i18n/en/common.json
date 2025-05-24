@@ -1,0 +1,6 @@
+{
+  "greeting": "Hello",
+  "errors": {
+    "not_found": "Resource not found"
+  }
+}

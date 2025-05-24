@@ -1,0 +1,6 @@
+{
+  "greeting": "Salom",
+  "errors": {
+    "not_found": "Resurs topilmadi"
+  }
+}
